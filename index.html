@@ -1,0 +1,173 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>truOS Tarayıcı Tanılama</title>
+<style>
+  /* Layout: single column report, grouped "probe" cards; mono accents for machine data */
+  :root{
+    --bg:#0f1319; --panel:#161c26; --panel2:#1d2531; --fg:#e8edf4; --muted:#93a1b5;
+    --line:#2a3340; --accent:#4ea1ff; --ok:#39c08b; --warn:#e6b53c; --crit:#ef5f6b;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f3f5f9; --panel:#ffffff; --panel2:#eef2f8; --fg:#131821; --muted:#5a6b80;
+      --line:#dde3ec; --accent:#1f6fe0; --ok:#1c9c6e; --warn:#b67f12; --crit:#d23c49;
+      color-scheme:light;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f3f5f9; --panel:#ffffff; --panel2:#eef2f8; --fg:#131821; --muted:#5a6b80;
+    --line:#dde3ec; --accent:#1f6fe0; --ok:#1c9c6e; --warn:#b67f12; --crit:#d23c49;
+    color-scheme:light;
+  }
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px}
+  header h1{font-size:1.45rem;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+  header p{margin:0;color:var(--muted);font-size:.9rem}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-top:16px}
+  .card h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted);margin:0 0 12px;font-weight:600}
+  .row{display:flex;gap:12px;justify-content:space-between;align-items:baseline;
+    padding:7px 0;border-top:1px solid var(--line)}
+  .row:first-of-type{border-top:none}
+  .k{color:var(--muted);font-size:.86rem;flex:0 0 auto}
+  .v{font-family:var(--mono);font-size:.84rem;text-align:right;min-width:0;
+    word-break:break-word;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;font-family:var(--sans);font-size:.74rem;font-weight:600;
+    padding:2px 9px;border-radius:999px;border:1px solid}
+  .pill.ok{color:var(--ok);border-color:var(--ok)}
+  .pill.warn{color:var(--warn);border-color:var(--warn)}
+  .pill.crit{color:var(--crit);border-color:var(--crit)}
+  .pill.na{color:var(--muted);border-color:var(--line)}
+  button{font-family:var(--sans);font-size:.92rem;font-weight:600;color:#fff;
+    background:var(--accent);border:none;border-radius:10px;padding:11px 16px;
+    cursor:pointer;width:100%}
+  button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+  .note{color:var(--muted);font-size:.82rem;margin:10px 0 0}
+  .result{margin-top:12px;font-family:var(--mono);font-size:.82rem;
+    background:var(--panel2);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word}
+  .ua{font-family:var(--mono);font-size:.8rem;background:var(--panel2);
+    border-radius:10px;padding:12px;word-break:break-word}
+  footer{color:var(--muted);font-size:.76rem;margin-top:22px;text-align:center}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>truOS Tarayıcı Tanılama</h1>
+    <p>Araçtaki tarayıcının dışarıya ne kadar yüzey açtığını ölçer. Hiçbir şey kurmaz, cihaza yazmaz; yalnızca tarayıcının zaten verdiği bilgileri okur.</p>
+  </header>
+
+  <section class="card">
+    <h2>Kimlik (User-Agent)</h2>
+    <div class="ua" id="ua">…</div>
+    <div class="row"><span class="k">Android sürümü</span><span class="v" id="android">—</span></div>
+    <div class="row"><span class="k">Chrome / WebView</span><span class="v" id="chrome">—</span></div>
+    <div class="row"><span class="k">Tarayıcı tipi</span><span class="v" id="engine">—</span></div>
+    <div class="row"><span class="k">Cihaz / model</span><span class="v" id="model">—</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Ekran & ortam</h2>
+    <div class="row"><span class="k">Çözünürlük</span><span class="v" id="res">—</span></div>
+    <div class="row"><span class="k">Dokunmatik nokta</span><span class="v" id="touch">—</span></div>
+    <div class="row"><span class="k">Dil</span><span class="v" id="lang">—</span></div>
+    <div class="row"><span class="k">Saat dilimi</span><span class="v" id="tz">—</span></div>
+    <div class="row"><span class="k">Çevrimiçi</span><span class="v" id="online">—</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Açık web yüzeyleri</h2>
+    <div class="row"><span class="k">Dosya seçici (input file)</span><span class="v" id="cap-file">—</span></div>
+    <div class="row"><span class="k">Pano yazma</span><span class="v" id="cap-clip">—</span></div>
+    <div class="row"><span class="k">Konum (Geolocation)</span><span class="v" id="cap-geo">—</span></div>
+    <div class="row"><span class="k">Kamera/Mikrofon API</span><span class="v" id="cap-media">—</span></div>
+    <div class="row"><span class="k">Yerel depolama</span><span class="v" id="cap-ls">—</span></div>
+    <div class="row"><span class="k">Service Worker</span><span class="v" id="cap-sw">—</span></div>
+    <div class="row"><span class="k">Yeni sekme (window.open)</span><span class="v" id="cap-open">—</span></div>
+  </section>
+
+  <section class="card">
+    <h2>İndirme testi</h2>
+    <p class="note">Zararsız bir <b>.txt</b> dosyası indirmeyi dener (APK değil). Amaç: tarayıcı indirmeye izin veriyor mu ve dosyaya ulaşılıp açılabiliyor mu? Butona dokun, sonra araçta bir indirme bildirimi / "Aç" seçeneği çıkıyor mu gözle takip et.</p>
+    <button id="dl">.txt indirmeyi dene</button>
+    <div class="result" id="dlres" hidden></div>
+    <p class="note">Yorum: İndirme başlıyor ve açılabiliyorsa, aynı mekanizma bir <b>.apk</b> için de kapı olabilir — kapatılması gereken yüzey budur. İndirme hiç başlamıyorsa bu yol kapalı demektir.</p>
+  </section>
+
+  <section class="card">
+    <h2>Özel şema / köprü testi</h2>
+    <p class="note">Aşağıdaki linkler araç uygulamalarına veya yükleyiciye köprü olup olmadığını yoklar. Dokununca bir şey açılıyorsa (uygulama, diyalog) not al; hiçbir şey olmuyorsa güvenli.</p>
+    <div class="row"><span class="k"><a href="intent://scan/#Intent;scheme=test;end" style="color:var(--accent)">intent://</a></span><span class="v">dokun & gözle</span></div>
+    <div class="row"><span class="k"><a href="market://details?id=test" style="color:var(--accent)">market://</a></span><span class="v">dokun & gözle</span></div>
+    <div class="row"><span class="k"><a href="package:test" style="color:var(--accent)">package:</a></span><span class="v">dokun & gözle</span></div>
+  </section>
+
+  <footer id="now">—</footer>
+</div>
+
+<script>
+(function(){
+  var ua = navigator.userAgent || "";
+  document.getElementById("ua").textContent = ua || "(boş)";
+
+  var am = ua.match(/Android\s+([\d.]+)/);
+  document.getElementById("android").textContent = am ? am[1] : "görünmüyor";
+  var cm = ua.match(/Chrome\/([\d.]+)/);
+  document.getElementById("chrome").textContent = cm ? cm[1] : "görünmüyor";
+  var model = ua.match(/Android[^;]*;\s*([^)]+)\)/);
+  document.getElementById("model").textContent = model ? model[1].trim() : "—";
+
+  var engine = "Bilinmeyen";
+  if(/wv\)/.test(ua) || /; wv/.test(ua)) engine = "Android WebView (gömülü)";
+  else if(cm) engine = "Chrome tabanlı tarayıcı";
+  document.getElementById("engine").textContent = engine;
+
+  document.getElementById("res").textContent =
+    screen.width+"×"+screen.height+" @"+(window.devicePixelRatio||1)+"x";
+  document.getElementById("touch").textContent = (navigator.maxTouchPoints||0)+" nokta";
+  document.getElementById("lang").textContent = navigator.language||"—";
+  try{ document.getElementById("tz").textContent =
+    Intl.DateTimeFormat().resolvedOptions().timeZone||"—"; }catch(e){ document.getElementById("tz").textContent="—"; }
+  document.getElementById("online").textContent = navigator.onLine ? "evet":"hayır";
+
+  function mark(id, present, goodWhenAbsent){
+    var el = document.getElementById(id);
+    var cls, txt;
+    if(present){ cls = goodWhenAbsent ? "warn":"ok"; txt = goodWhenAbsent ? "AÇIK ⚠":"var"; }
+    else { cls = goodWhenAbsent ? "ok":"na"; txt = goodWhenAbsent ? "kapalı ✓":"yok"; }
+    el.innerHTML = '<span class="pill '+cls+'">'+txt+'</span>';
+  }
+  var ls=false; try{ localStorage.setItem("_t","1"); localStorage.removeItem("_t"); ls=true; }catch(e){}
+  mark("cap-file", !!document.createElement("input").files!==undefined, false);
+  document.getElementById("cap-file").innerHTML='<span class="pill ok">destekli</span>';
+  mark("cap-clip", !!(navigator.clipboard&&navigator.clipboard.writeText), false);
+  mark("cap-geo", !!navigator.geolocation, true);
+  mark("cap-media", !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia), true);
+  mark("cap-ls", ls, false);
+  mark("cap-sw", "serviceWorker" in navigator, true);
+  var canOpen=false; try{ var w=window.open("","_blank"); if(w){canOpen=true;w.close();} }catch(e){}
+  mark("cap-open", canOpen, true);
+
+  document.getElementById("dl").addEventListener("click", function(){
+    var res = document.getElementById("dlres");
+    res.hidden = false;
+    try{
+      var blob = new Blob(["truOS tarayici indirme testi — "+new Date().toISOString()+
+        "\nBu zararsiz bir metin dosyasidir."], {type:"text/plain"});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "truos-indirme-testi.txt";
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1500);
+      res.textContent = "Tetiklendi. Şimdi araçta bak:\n• Bir indirme bildirimi/çubuğu çıktı mı?\n• Dosyaya dokununca 'Aç' seçeneği var mı?\n• Hiçbir şey olmadıysa indirme büyük olasılıkla engelli.";
+    }catch(err){
+      res.textContent = "İndirme tetiklenemedi: "+err;
+    }
+  });
+
+  document.getElementById("now").textContent = "Oluşturuldu: "+new Date().toLocaleString("tr-TR");
+})();
+</script>
