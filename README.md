@@ -1,3 +1,7 @@
+# ➡️ [ TANILAMA SAYFASINI AÇ ](https://talhaperi1903.github.io/d/)
+
+## [ 👉 BURAYA DOKUN: talhaperi1903.github.io/d ](https://talhaperi1903.github.io/d/)
+
 # truOS Tarayıcı Tanılama
 
 Togg T10X (truOS) araç tarayıcısının dışarıya açtığı web yüzeyini ölçmek için basit bir tanılama sayfası. Hiçbir şey kurmaz/yazmaz; yalnızca tarayıcının verdiği bilgileri okur ve bir indirme testi tetikler.
